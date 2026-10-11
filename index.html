@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GIANGNAM 4.0 - Hệ Sinh Thái Học Tập Đa Phương Pháp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <!-- Firebase App & Firestore SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; color: #1e293b; touch-action: manipulation; }
+        .portal-card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        button { cursor: pointer; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between custom-scrollbar overflow-x-hidden">
+
+    <!-- HEADER / NAVBAR -->
+    <header class="bg-white sticky top-0 z-50 px-4 py-3 shadow-md border-b border-blue-100">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-3">
+            <div class="flex items-center space-x-3 w-full lg:w-auto justify-between lg:justify-start">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/20 font-bold">
+                        <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-base md:text-lg text-blue-900 tracking-wide">GIANGNAM 4.0</h1>
+                        <p class="text-xs text-slate-500">GV: Nguyễn Giang Nam • <span id="syncStatusBadge" class="text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check"></i> Đang đồng bộ đám mây</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-1.5 w-full lg:w-auto justify-end">
+                <button onclick="manualSyncToCloud()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow transition flex items-center space-x-1">
+                    <i class="fa-solid fa-cloud-arrow-up"></i><span>Lưu đám mây</span>
+                </button>
+                <button onclick="manualFetchFromCloud()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow transition flex items-center space-x-1">
+                    <i class="fa-solid fa-cloud-arrow-down"></i><span>Tải dữ liệu</span>
+                </button>
+                <div class="flex items-center space-x-1 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                    <span class="text-[11px] text-slate-600 font-medium">Lớp:</span>
+                    <select id="classSelect" onchange="changeClass(this.value)" class="bg-transparent text-blue-900 font-bold text-xs focus:outline-none cursor-pointer">
+                        <option value="10E">Lớp 10E</option>
+                        <option value="12A">Lớp 12A</option>
+                        <option value="12B">Lớp 12B</option>
+                        <option value="12E">Lớp 12E</option>
+                    </select>
+                </div>
+
+                <!-- MENU CHUYỂN ĐỔI PHƯƠNG PHÁP -->
+                <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 flex-wrap gap-1">
+                    <button onclick="switchView('student')" id="btnStudentView" class="px-2.5 py-1 rounded text-[11px] font-bold transition bg-blue-600 text-white shadow">
+                        <i class="fa-solid fa-people-group mr-1"></i> Nhóm
+                    </button>
+                    <button onclick="switchView('director')" id="btnDirectorView" class="px-2.5 py-1 rounded text-[11px] font-semibold transition text-slate-700 hover:text-blue-600">
+                        <i class="fa-solid fa-clapperboard mr-1"></i> AI Đạo Diễn
+                    </button>
+                    <button onclick="switchView('stations')" id="btnStationsView" class="px-2.5 py-1 rounded text-[11px] font-semibold transition text-slate-700 hover:text-blue-600">
+                        <i class="fa-solid fa-network-wired mr-1"></i> Trạm Số
+                    </button>
+                    <button onclick="switchView('project')" id="btnProjectView" class="px-2.5 py-1 rounded text-[11px] font-semibold transition text-slate-700 hover:text-blue-600">
+                        <i class="fa-solid fa-diagram-project mr-1"></i> Dự Án & Sơ Đồ
+                    </button>
+                    <button onclick="switchView('debate')" id="btnDebateView" class="px-2.5 py-1 rounded text-[11px] font-semibold transition text-slate-700 hover:text-blue-600">
+                        <i class="fa-solid fa-comments mr-1"></i> Tranh Biện
+                    </button>
+                    <button onclick="promptTeacherLogin()" id="btnTeacherView" class="px-2.5 py-1 rounded text-[11px] font-semibold transition text-slate-700 hover:text-blue-600">
+                        <i class="fa-solid fa-user-shield mr-1"></i> Quản Lý GV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-3 md:p-6 space-y-4">
+        
+        <!-- 1. PHƯƠNG PHÁP LÀM VIỆC NHÓM (CÓ TÍNH GIỜ THẢO LUẬN & ĐỒNG BỘ ĐIỂM 10) -->
+        <div id="studentView" class="space-y-4">
+            <div class="portal-card p-4 rounded-xl border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Nhiệm vụ học tập</span>
+                        <h2 id="currentAssignmentTitle" class="text-sm md:text-base font-bold text-blue-950">Bài tập: Chưa có đề bài được giao</h2>
+                    </div>
+                    <p id="currentAssignmentDesc" class="text-xs text-slate-600 line-clamp-2">Giáo viên chưa cập nhật yêu cầu cho lớp này.</p>
+                </div>
+                <div class="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                    <button onclick="openCreateGroupModal()" class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-users-gear"></i><span>Tạo nhóm & QR</span>
+                    </button>
+                    <button onclick="openJoinGroupModal()" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-qrcode"></i><span>Vào nhóm mã</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- BỘ ĐẾM GIỜ THẢO LUẬN & NỘP BÀI TRỰC TUYẾN -->
+            <div class="portal-card p-3 rounded-xl flex items-center justify-between bg-amber-50 border-amber-200">
+                <div class="flex items-center space-x-2 text-xs font-bold text-amber-900">
+                    <i class="fa-solid fa-stopwatch text-base text-amber-600"></i>
+                    <span>Thời gian thảo luận còn lại: <span id="countdownTimerDisplay" class="text-rose-600 font-mono text-sm">--:--</span></span>
+                </div>
+                <div class="text-[11px] text-slate-600">
+                    Hạn nộp bài: <strong id="deadlineDisplayBadge" class="text-blue-900">Chưa đặt hạn</strong> (Nộp sớm được cộng điểm, tối đa 10đ)
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="portal-card p-4 rounded-xl space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 gap-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-blue-100 text-blue-600 p-2.5 rounded-lg border border-blue-200">
+                                    <i class="fa-solid fa-people-group text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 id="activeGroupName" class="font-bold text-sm md:text-base text-blue-950">Chưa chọn nhóm</h3>
+                                    <p class="text-xs text-slate-500">HS: <span id="currentStudentName" class="text-blue-600 font-medium">Chưa đăng nhập</span> | Vai trò: <span id="currentStudentRole" class="text-emerald-600 font-medium">Thành viên</span></p>
+                                </div>
+                            </div>
+                            <button onclick="openChangeGroupModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-300 transition flex items-center space-x-1">
+                                <i class="fa-solid fa-right-left"></i><span>Đổi nhóm</span>
+                            </button>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fa-solid fa-id-card-clip text-blue-600"></i><span>Bảng Phân Công & Vai Trò:</span>
+                            </h4>
+                            <div class="overflow-x-auto rounded-lg border border-slate-200">
+                                <table class="w-full text-left text-xs text-slate-700">
+                                    <thead class="bg-slate-100 text-slate-600 uppercase text-[10px]">
+                                        <tr>
+                                            <th class="p-2.5">Họ và tên</th>
+                                            <th class="p-2.5">Vai trò</th>
+                                            <th class="p-2.5 text-center">Biểu quyết</th>
+                                            <th class="p-2.5 text-right">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="groupMembersTableBody" class="divide-y divide-slate-200">
+                                        <tr><td colspan="4" class="p-4 text-center text-slate-400 italic">Chưa có học sinh nào trong nhóm.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex items-center justify-between text-xs">
+                                <span class="text-slate-600">Tổng thành viên: <strong id="groupMemberCountBadge" class="text-blue-600">0</strong></span>
+                                <span class="text-[11px] text-slate-500">Thư ký: <strong id="groupSecretaryName" class="text-amber-600">Chưa có</strong></span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 pt-2 border-t border-slate-200">
+                            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fa-solid fa-comments text-emerald-600"></i><span>Trao đổi nhóm & Đóng góp bài làm:</span>
+                            </h4>
+                            <div id="groupChatBox" class="bg-slate-50 rounded-lg p-3 h-36 overflow-y-auto custom-scrollbar space-y-2 border border-slate-200 text-xs">
+                                <div class="text-slate-400 italic text-center py-8">Chưa có nội dung trao đổi.</div>
+                            </div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <select id="contributionFileType" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-xs text-slate-700 focus:outline-none">
+                                    <option value="Word (.docx)">Word (.docx)</option>
+                                    <option value="Excel (.xlsx)">Excel (.xlsx)</option>
+                                    <option value="PowerPoint (.pptx)">PowerPoint (.pptx)</option>
+                                    <option value="PDF (.pdf)">PDF (.pdf)</option>
+                                    <option value="Hình ảnh (.png/.jpg)">Hình ảnh (.png/.jpg)</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                                <input type="text" id="chatInputMessage" placeholder="Nội dung hoặc tên tệp đóng góp..." class="flex-grow bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none" onkeypress="if(event.key==='Enter') sendGroupContribution()">
+                                <label class="bg-slate-100 hover:bg-slate-200 text-blue-600 border border-slate-300 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer flex items-center space-x-1">
+                                    <i class="fa-solid fa-paperclip"></i><span>Chọn tệp</span>
+                                    <input type="file" id="studentFileSelector" class="hidden" onchange="handleStudentFileUpload(this)">
+                                </label>
+                                <button onclick="sendGroupContribution()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-xs shadow transition flex items-center space-x-1">
+                                    <i class="fa-solid fa-plus-circle mr-1"></i><span>Đóng Góp</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div class="text-xs text-slate-600">
+                                <span class="block text-slate-400">Trạng thái nộp bài:</span>
+                                <strong id="groupSubmissionStatusBadge" class="text-amber-600">Chưa gửi bài</strong>
+                            </div>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <button onclick="toggleConsentVote()" class="flex-1 sm:flex-none bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs px-3.5 py-2 rounded-lg font-semibold">
+                                    <i class="fa-solid fa-check-to-slot mr-1"></i>Biểu quyết nộp
+                                </button>
+                                <button onclick="secretarySubmitAssignment()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow">
+                                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i>Thư ký nộp GV
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="portal-card p-4 rounded-xl space-y-3">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-1.5">
+                            <i class="fa-solid fa-file-lines text-amber-500"></i><span>Tài liệu từ GV:</span>
+                        </h4>
+                        <div id="studentTeacherAttachmentsArea" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
+                            <span class="text-slate-400 italic">Chưa có tài liệu.</span>
+                        </div>
+                    </div>
+
+                    <div class="portal-card p-4 rounded-xl space-y-3">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-1.5">
+                            <i class="fa-solid fa-award text-purple-600"></i><span>Điểm số & Nhận xét:</span>
+                        </h4>
+                        <div class="space-y-2 text-xs">
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <span class="text-slate-500 block">Điểm nhóm (Thang 10):</span>
+                                <div id="studentViewGradeGroup" class="font-bold text-emerald-600 text-sm">Chưa chấm</div>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <span class="text-slate-500 block">Điểm cá nhân TB:</span>
+                                <div id="studentViewGradePersonal" class="font-bold text-blue-600 text-sm">Chưa chấm</div>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <span class="text-slate-500 block">Nhận xét:</span>
+                                <div id="studentViewTeacherFeedback" class="text-slate-700 italic">Chi tiết nhận xét từ GV.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. PHƯƠNG PHÁP AI ĐẠO DIỄN SẮM VAI -->
+        <div id="directorView" class="space-y-4 hidden">
+            <div class="portal-card p-4 rounded-xl border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full uppercase font-bold">Phương pháp sắm vai</span>
+                        <h2 class="text-sm md:text-base font-bold text-blue-950">AI Đạo Diễn Sáng Tạo Kịch Bản</h2>
+                    </div>
+                    <p class="text-xs text-slate-600">Trợ lý AI đồng hành nhóm qua các bước: chọn chủ đề, tình huống, phân vai, viết kịch bản, tương tác khán giả và tự đánh giá.</p>
+                </div>
+                <button onclick="clearDirectorChat()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs px-3.5 py-2 rounded-lg font-semibold shadow-sm flex items-center space-x-1.5">
+                    <i class="fa-solid fa-trash-can text-rose-500"></i><span>Làm mới kịch bản</span>
+                </button>
+            </div>
+            <div class="portal-card p-4 rounded-xl space-y-4">
+                <div id="directorChatMessages" class="bg-slate-50 rounded-xl p-4 h-[420px] overflow-y-auto custom-scrollbar space-y-3 border border-slate-200 text-xs text-slate-800">
+                    <div class="bg-white text-slate-900 p-3.5 rounded-xl border border-slate-300 shadow-sm space-y-1 max-w-2xl">
+                        <strong class="text-blue-600 block"><i class="fa-solid fa-clapperboard mr-1"></i> AI Đạo Diễn:</strong>
+                        Xin chào các nhà biên kịch trẻ! Tôi là AI đạo diễn của nhóm bạn. Hôm nay, chúng ta sẽ cùng sáng tạo một vở diễn sắm vai của riêng mình qua các bước: chọn chủ đề, xây dựng mâu thuẫn, phân vai và hoàn thiện kịch bản biểu diễn.<br><br>
+                        <strong>Câu hỏi đầu tiên:</strong> Nhóm bạn muốn kể câu chuyện về chủ đề nào? (Ví dụ: <em>Tình bạn học đường, Áp lực gia đình, Sử dụng AI có trách nhiệm, An toàn mạng xã hội...</em>) Hãy chia sẻ ý tưởng nhé!
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="directorUserInput" placeholder="Nhập ý kiến hoặc câu trả lời của nhóm cho đạo diễn AI..." class="flex-grow bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-xs text-slate-900 focus:outline-none focus:border-blue-500" onkeypress="if(event.key==='Enter') sendDirectorMessage()">
+                    <button onclick="sendDirectorMessage()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-paper-plane mr-1"></i><span>Gửi Đạo Diễn</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. PHƯƠNG PHÁP TRẠM HỌC TẬP SỐ (BẢO MẬT VIDEO: CHỈ KHI VÀO NHÓM MỚI HIỆN VIDEO TRẠM 1 & TRẠM 2) -->
+        <div id="stationsView" class="space-y-4 hidden">
+            <div class="portal-card p-4 rounded-xl border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                    <h2 class="text-base font-bold text-blue-950"><i class="fa-solid fa-network-wired mr-2 text-blue-600"></i>Phương Pháp Trạm Học Tập Số (Smart Stations)</h2>
+                    <p class="text-xs text-slate-600 mt-1">Học sinh phải tham gia nhóm trên hệ thống mới mở khóa được video bài học tại Trạm 1 & Trạm 2 để thảo luận.</p>
+                </div>
+                <div class="text-xs bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-blue-900 font-semibold">
+                    Nhóm hiện tại: <span id="stationActiveGroupLabel" class="text-blue-600">Chưa chọn nhóm</span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Trạm 1 -->
+                <div class="portal-card p-4 rounded-xl space-y-3 border-l-4 border-blue-600 flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <span class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Trạm 1</span>
+                        <h3 class="font-bold text-slate-900 text-sm">Trạm Trải Nghiệm Thực Tế</h3>
+                        
+                        <!-- Khu vực video bảo mật: Chỉ hiển thị khi đã vào nhóm -->
+                        <div id="station1VideoWrapper" class="bg-slate-900 rounded-lg overflow-hidden aspect-video flex items-center justify-center relative shadow-inner">
+                            <div id="station1LockedNotice" class="absolute inset-0 bg-slate-900/90 z-10 flex flex-col items-center justify-center p-3 text-center text-xs text-amber-300">
+                                <i class="fa-solid fa-lock text-lg mb-1"></i>
+                                <span>Em chưa vào nhóm! Hãy chọn nhóm ở tab "Nhóm" để mở khóa video bài học.</span>
+                            </div>
+                            <div id="station1VideoContainer" class="w-full h-full hidden"></div>
+                        </div>
+
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px] text-slate-700 space-y-1">
+                            <p><strong>📖 Hướng dẫn:</strong> Xem video trạm 1, thảo luận nhóm và điền tên xác nhận.</p>
+                        </div>
+                    </div>
+                    <button onclick="updateStationProgress(1)" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 rounded-lg shadow transition">Xác Nhận Trạm 1 (Kèm Tên HS)</button>
+                </div>
+
+                <!-- Trạm 2 -->
+                <div class="portal-card p-4 rounded-xl space-y-3 border-l-4 border-indigo-600 flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <span class="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Trạm 2</span>
+                        <h3 class="font-bold text-slate-900 text-sm">Trạm Mô Phỏng & Lý Thuyết</h3>
+                        
+                        <!-- Khu vực video bảo mật Trạm 2 -->
+                        <div id="station2VideoWrapper" class="bg-slate-900 rounded-lg overflow-hidden aspect-video flex items-center justify-center relative shadow-inner">
+                            <div id="station2LockedNotice" class="absolute inset-0 bg-slate-900/90 z-10 flex flex-col items-center justify-center p-3 text-center text-xs text-amber-300">
+                                <i class="fa-solid fa-lock text-lg mb-1"></i>
+                                <span>Em chưa vào nhóm! Hãy chọn nhóm ở tab "Nhóm" để mở khóa video bài học.</span>
+                            </div>
+                            <div id="station2VideoContainer" class="w-full h-full hidden"></div>
+                        </div>
+
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px] text-slate-700 space-y-1">
+                            <p><strong>📖 Hướng dẫn:</strong> Xem video trạm 2, thảo luận lý thuyết và xác nhận.</p>
+                        </div>
+                    </div>
+                    <button onclick="updateStationProgress(2)" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 rounded-lg shadow transition">Xác Nhận Trạm 2 (Kèm Tên HS)</button>
+                </div>
+
+                <!-- Trạm 3 -->
+                <div class="portal-card p-4 rounded-xl space-y-3 border-l-4 border-purple-600 flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <span class="bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Trạm 3</span>
+                        <h3 class="font-bold text-slate-900 text-sm">Trạm Thử Thách AI</h3>
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-[11px] text-slate-700 space-y-2">
+                            <p><strong>📖 Hướng dẫn:</strong></p>
+                            <p>Sử dụng tab <strong>AI Đạo Diễn</strong> để đặt câu hỏi chất vấn trợ lý Gemini AI nhằm giải quyết vướng mắc.</p>
+                        </div>
+                    </div>
+                    <button onclick="updateStationProgress(3)" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 rounded-lg shadow transition">Xác Nhận Trạm 3 (Kèm Tên HS)</button>
+                </div>
+
+                <!-- Trạm 4 -->
+                <div class="portal-card p-4 rounded-xl space-y-3 border-l-4 border-emerald-600 flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Trạm 4</span>
+                        <h3 class="font-bold text-slate-900 text-sm">Trạm Sản Phẩm & Trình Bày</h3>
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-[11px] text-slate-700 space-y-2">
+                            <p><strong>📖 Hướng dẫn:</strong></p>
+                            <p>Tổng hợp kết quả báo cáo, nộp tệp sản phẩm nhóm về cho giáo viên.</p>
+                        </div>
+                    </div>
+                    <button onclick="updateStationProgress(4)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-lg shadow transition">Xác Nhận Trạm 4 (Kèm Tên HS)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. PHƯƠNG PHÁP DỰ ÁN & SƠ ĐỒ Ý TƯỞNG -->
+        <div id="projectView" class="space-y-4 hidden">
+            <div class="portal-card p-4 rounded-xl border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <h2 class="text-base font-bold text-blue-950"><i class="fa-solid fa-diagram-project mr-2 text-blue-600"></i>Phương Pháp Dự Án & Sơ Đồ Ý Tưởng Nhóm</h2>
+                <p class="text-xs text-slate-600 mt-1">Xây dựng ý tưởng giải quyết vấn đề, phân chia nhiệm vụ sơ đồ tư duy giải pháp thực tiễn.</p>
+            </div>
+            <div class="portal-card p-4 rounded-xl space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+                        <h4 class="font-bold text-blue-900 text-xs">1. Vấn đề cần giải quyết</h4>
+                        <textarea id="projectProblemInput" rows="3" placeholder="Mô tả vấn đề thực tiễn cần khảo sát..." class="w-full bg-white border border-slate-300 rounded p-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"></textarea>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+                        <h4 class="font-bold text-blue-900 text-xs">2. Giải pháp đề xuất của nhóm</h4>
+                        <textarea id="projectSolutionInput" rows="3" placeholder="Nêu giải pháp / sản phẩm thực hiện..." class="w-full bg-white border border-slate-300 rounded p-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"></textarea>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+                        <h4 class="font-bold text-blue-900 text-xs">3. Kế hoạch hành động</h4>
+                        <textarea id="projectPlanInput" rows="3" placeholder="Phân công công việc, thời hạn..." class="w-full bg-white border border-slate-300 rounded p-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button onclick="saveProjectData()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow">Lưu Ý Tưởng Dự Án Lên Đám Mây</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. PHƯƠNG PHÁP TRANH BIỆN SỐ -->
+        <div id="debateView" class="space-y-4 hidden">
+            <div class="portal-card p-4 rounded-xl border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <h2 class="text-base font-bold text-blue-950"><i class="fa-solid fa-comments mr-2 text-blue-600"></i>Phương Pháp Tranh Biện Số & Bình Chọn Giải Pháp</h2>
+                <p class="text-xs text-slate-600 mt-1">Đưa ra quan điểm, đặt câu hỏi phản biện chéo giữa các nhóm và bình chọn giải pháp tối ưu nhất.</p>
+            </div>
+            <div class="portal-card p-4 rounded-xl space-y-4">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-blue-900 text-xs uppercase">Bảng Ý Kiến & Phản Biện Cộng Đồng Lớp Học</h3>
+                        <button onclick="addDebateComment()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow">Thêm ý kiến phản biện</button>
+                    </div>
+                    <div id="debateForumList" class="bg-slate-50 rounded-xl p-4 h-64 overflow-y-auto custom-scrollbar space-y-3 text-xs border border-slate-200">
+                        <div class="text-slate-400 italic text-center py-10">Chưa có ý kiến tranh biện nào.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEACHER VIEW AREA (QUẢN LÝ THỜI GIAN, ĐƯA VIDEO TRẠM & CHẤM ĐIỂM) -->
+        <div id="teacherView" class="space-y-4 hidden">
+            <div class="portal-card p-4 rounded-xl border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">Quản trị Giáo viên</span>
+                        <h2 class="text-sm md:text-base font-bold text-purple-950">Bảng Quản Lý Lớp Học & Giao Bài Tập</h2>
+                    </div>
+                    <p class="text-xs text-slate-600">Cài đặt giờ thảo luận, đưa video/ngữ liệu cho trạm 1 & 2, theo dõi tiến độ và chấm điểm thang 10đ.</p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="openAddClassModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-plus-circle"></i><span>Thêm lớp mới</span>
+                    </button>
+                    <button onclick="manualFetchFromCloud()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-cloud-arrow-down"></i><span>Tải dữ liệu</span>
+                    </button>
+                    <button onclick="switchView('student')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3.5 py-2 rounded-lg font-semibold border border-slate-300">
+                        <i class="fa-solid fa-arrow-left mr-1"></i>Quay lại Nhóm
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="teacherClassesGrid"></div>
+
+            <div class="portal-card p-4 rounded-xl space-y-4" id="teacherDetailPanel">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 gap-2">
+                    <div class="flex items-center space-x-2">
+                        <span id="teacherPanelClassBadge" class="bg-purple-600 text-white text-xs px-2.5 py-1 rounded font-bold">Lớp 10E</span>
+                        <h3 class="font-bold text-sm md:text-base text-slate-900">Soạn Bài Giảng, Cài Đặt Giờ & Giao Nhiệm Vụ</h3>
+                    </div>
+                    <button onclick="saveTeacherAssignment()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i>Lưu & Giao bài lên đám mây
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Chủ đề bài học:</label>
+                            <input type="text" id="teacherInputTopic" placeholder="VD: Chủ đề 2..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Yêu cầu chi tiết:</label>
+                            <textarea id="teacherInputRequirement" rows="3" placeholder="Nêu yêu cầu sản phẩm..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-900 focus:outline-none custom-scrollbar focus:border-blue-500"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Thời lượng thảo luận (Phút):</label>
+                                <input type="number" id="teacherInputDurationMinutes" value="15" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Hạn nộp bài (Deadline):</label>
+                                <input type="datetime-local" id="teacherInputDeadline" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-2 text-[11px] text-slate-900">
+                            </div>
+                        </div>
+                        <!-- Ô đưa link video cho Trạm 1 và Trạm 2 -->
+                        <div class="space-y-2 pt-2 border-t border-slate-200">
+                            <label class="block text-xs font-bold text-blue-900">Đưa Video/Ngữ liệu cho Trạm Số (Dán Link YouTube Embed):</label>
+                            <div>
+                                <label class="block text-[11px] text-slate-600 mb-0.5">Link Video Trạm 1:</label>
+                                <input type="text" id="teacherInputStation1Video" placeholder="https://www.youtube.com/embed/..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-600 mb-0.5">Link Video Trạm 2:</label>
+                                <input type="text" id="teacherInputStation2Video" placeholder="https://www.youtube.com/embed/..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Tài liệu đính kèm chung:</label>
+                            <div class="flex items-center gap-2">
+                                <input type="text" id="teacherInputAttachmentName" placeholder="Tên tệp tài liệu..." class="flex-grow bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none" readonly>
+                                <label class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3.5 py-2 rounded-lg text-xs cursor-pointer flex items-center space-x-1 shrink-0">
+                                    <i class="fa-solid fa-folder-open"></i><span>Chọn tệp</span>
+                                    <input type="file" id="teacherFileSelector" class="hidden" onchange="handleTeacherFileUpload(this)">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Bảng Theo Dõi Trạm & Tổ Nhóm (<span id="teacherSelectedClassName">10E</span>):</h4>
+                            <button onclick="manualFetchFromCloud()" class="bg-blue-100 text-blue-700 font-bold text-[11px] px-2 py-1 rounded"><i class="fa-solid fa-rotate mr-1"></i>Làm mới</button>
+                        </div>
+                        <div id="teacherStationsTrackerContainer" class="bg-slate-50 rounded-lg border border-slate-200 p-3 h-64 overflow-y-auto custom-scrollbar space-y-3 text-xs">
+                            <div class="text-slate-400 italic text-center py-12">Chưa có dữ liệu trạm từ học sinh.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 space-y-3">
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Chấm điểm nhóm (Thang tối đa 10đ & Hướng dẫn phân bổ):</h4>
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 text-xs text-blue-900 space-y-1">
+                        <p>💡 <strong>Gợi ý phân bổ điểm chuẩn (Tổng 10đ):</strong> Nộp bài đúng hạn (6đ) + Hoàn thành đủ 4 trạm (2đ) + Tương tác/Tranh biện tích cực (2đ). Hệ thống tự động ghi nhận thời gian nộp bài sớm để thầy/cô dễ cân nhắc điểm thưởng.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Chọn tổ chấm:</label>
+                            <select id="teacherSelectTargetGroup" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none">
+                                <option value="">-- Chọn tổ nhóm --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Điểm nhóm (Tối đa 10đ):</label>
+                            <input type="number" id="teacherInputGradeGroup" min="0" max="10" step="0.1" placeholder="9.5" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Điểm cá nhân TB:</label>
+                            <input type="number" id="teacherInputGradePersonal" min="0" max="10" step="0.1" placeholder="9.0" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nhận xét của giáo viên:</label>
+                        <textarea id="teacherInputFeedback" rows="2" placeholder="Nhận xét chi tiết..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 custom-scrollbar focus:border-blue-500"></textarea>
+                    </div>
+                    <div class="flex justify-end">
+                        <button onclick="saveTeacherGrades()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow">
+                            <i class="fa-solid fa-award mr-1"></i>Xuất bản điểm lên đám mây
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODALS -->
+    <div id="addClassModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="portal-card w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <h3 class="font-bold text-blue-950"><i class="fa-solid fa-plus-circle mr-1 text-blue-600"></i> Thêm Lớp Học Mới</h3>
+                <button onclick="closeModal('addClassModal')" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1 text-xs">Tên lớp mới (Ví dụ: 10A1, 11B...):</label>
+                <input type="text" id="inputNewClassName" placeholder="Nhập tên lớp..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500">
+            </div>
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200">
+                <button onclick="closeModal('addClassModal')" class="bg-slate-100 text-slate-700 text-xs px-4 py-2 rounded-lg">Hủy</button>
+                <button onclick="submitAddClass()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow">Tạo Lớp</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white py-3 px-4 text-center text-xs text-slate-500 border-t border-slate-200 shadow-inner">
+        GIANGNAM 4.0 • Phát triển bởi Thầy giáo Nguyễn Giang Nam • Cổng Giáo Dục Số Tích Hợp AI & Node.js Backend
+    </footer>
+
+    <div id="teacherLoginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="portal-card w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <h3 class="font-bold text-base text-blue-950">Xác Thực Giáo Viên Quản Lý</h3>
+                <button onclick="closeModal('teacherLoginModal')" class="text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div class="bg-purple-50 p-3 rounded-lg border border-purple-200 text-purple-900">Nhập mật khẩu quản trị để mở bảng quản lý.</div>
+                <input type="password" id="teacherPasswordInput" placeholder="Nhập mật khẩu..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:border-blue-500">
+            </div>
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200">
+                <button onclick="closeModal('teacherLoginModal')" class="bg-slate-100 text-slate-700 text-xs px-4 py-2 rounded-lg">Hủy</button>
+                <button onclick="verifyTeacherLogin()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-lg">Đăng Nhập</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="createGroupModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="portal-card w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <h3 class="font-bold text-base text-blue-950">Tạo Nhóm Trực Tuyến (<span id="modalCreateClassName">10E</span>)</h3>
+                <button onclick="closeModal('createGroupModal')" class="text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <input type="text" id="inputGroupName" placeholder="Tên tổ nhóm (VD: Tổ 1)..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:border-blue-500">
+                <input type="text" id="inputGroupCode" placeholder="Mã nhóm..." class="w-full bg-slate-50 border border-blue-400 rounded-lg px-3 py-2 text-xs text-blue-900 font-mono font-bold">
+                <div id="createdGroupQRContainer" class="hidden text-center space-y-2 pt-3 border-t border-slate-200">
+                    <p class="text-blue-700 font-bold">Quét QR để vào nhóm:</p>
+                    <div id="qrcodeRenderArea" class="inline-block bg-white p-3 rounded-xl shadow-lg border border-slate-200"></div>
+                </div>
+            </div>
+            <div class="flex justify-between items-center pt-2 border-t border-slate-200">
+                <button onclick="closeModal('createGroupModal')" class="bg-slate-100 text-slate-700 text-xs px-4 py-2 rounded-lg">Hủy</button>
+                <button onclick="submitCreateGroup()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow">Tạo Nhóm & QR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="joinGroupModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="portal-card w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <h3 class="font-bold text-base text-blue-950">Tham Gia Nhóm Bằng Mã</h3>
+                <button onclick="closeModal('joinGroupModal')" class="text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <input type="text" id="joinStudentNameInput" placeholder="Họ và tên học sinh..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:border-blue-500">
+                <input type="text" id="joinGroupCodeInput" placeholder="Mã nhóm..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-blue-900 font-mono font-bold focus:border-blue-500">
+            </div>
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200">
+                <button onclick="closeModal('joinGroupModal')" class="bg-slate-100 text-slate-700 text-xs px-4 py-2 rounded-lg">Hủy</button>
+                <button onclick="submitJoinGroup()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow">Vào Nhóm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="changeGroupModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="portal-card w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl max-h-[80vh] overflow-y-auto custom-scrollbar">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <h3 class="font-bold text-base text-blue-950">Chọn Nhóm Thuộc Lớp <span id="modalChangeClassName">10E</span></h3>
+                <button onclick="closeModal('changeGroupModal')" class="text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="availableGroupsListContainer" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3_I7RGkE5-JEaWnagXSvrJcyx-ycAi3s",
+            authDomain: "giangnam146-5a353.firebaseapp.com",
+            projectId: "giangnam146-5a353",
+            storageBucket: "giangnam146-5a353.firebasestorage.app",
+            messagingSenderId: "299610757174",
+            appId: "1:299610757174:web:ab3b0f3270932a2dcae097",
+            measurementId: "G-VPGHE5M58L"
+        };
+
+        let db;
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+        } catch (e) { console.error("Firebase init error:", e); }
+
+        const APP_STORAGE_KEY = "giangnam146_multiclass_app_v67";
+
+        let appState = {
+            currentClass: "10E",
+            activeGroupCode: "",
+            currentStudentName: "",
+            classes: {
+                "10E": { password: "10E2026", topic: "", requirement: "", durationMinutes: 15, deadline: "", station1Video: "", station2Video: "", attachmentName: "", attachmentData: "", teacherFeedback: {}, grades: {}, stations: {} },
+                "12A": { password: "12A2026", topic: "", requirement: "", durationMinutes: 15, deadline: "", station1Video: "", station2Video: "", attachmentName: "", attachmentData: "", teacherFeedback: {}, grades: {}, stations: {} },
+                "12B": { password: "12B2026", topic: "", requirement: "", attachmentName: "", attachmentData: "", station1Video: "", station2Video: "", teacherFeedback: {}, grades: {}, stations: {} },
+                "12E": { password: "12E2026", topic: "", requirement: "", durationMinutes: 15, deadline: "", station1Video: "", station2Video: "", attachmentName: "", attachmentData: "", teacherFeedback: {}, grades: {}, stations: {} }
+            },
+            groups: {},
+            projects: {},
+            debates: [],
+            directorChats: {}
+        };
+
+        let countdownInterval = null;
+
+        function loadAppData() {
+            const saved = localStorage.getItem(APP_STORAGE_KEY);
+            if (saved) { try { appState = JSON.parse(saved); } catch (e) { console.error(e); } }
+            updateClassSelectDropdown();
+            renderUI();
+            startCountdownTimer();
+        }
+
+        function saveAppDataLocally() { localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(appState)); }
+
+        function updateClassSelectDropdown() {
+            const select = document.getElementById('classSelect');
+            let html = '';
+            Object.keys(appState.classes).forEach(cls => {
+                const selected = cls === appState.currentClass ? 'selected' : '';
+                html += `<option value="${cls}" ${selected}>Lớp ${cls}</option>`;
+            });
+            select.innerHTML = html;
+        }
+
+        function switchView(view) {
+            ['studentView', 'directorView', 'stationsView', 'projectView', 'debateView', 'teacherView'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            ['btnStudentView', 'btnDirectorView', 'btnStationsView', 'btnProjectView', 'btnDebateView', 'btnTeacherView'].forEach(id => {
+                const btn = document.getElementById(id);
+                btn.className = "px-2.5 py-1 rounded text-[11px] font-semibold transition text-slate-700 hover:text-blue-600";
+            });
+
+            if (view === 'student') {
+                document.getElementById('studentView').classList.remove('hidden');
+                document.getElementById('btnStudentView').className = "px-2.5 py-1 rounded text-[11px] font-bold transition bg-blue-600 text-white shadow";
+                renderUI();
+            } else if (view === 'director') {
+                document.getElementById('directorView').classList.remove('hidden');
+                document.getElementById('btnDirectorView').className = "px-2.5 py-1 rounded text-[11px] font-bold transition bg-blue-600 text-white shadow";
+                renderDirectorChat();
+            } else if (view === 'stations') {
+                document.getElementById('stationsView').classList.remove('hidden');
+                document.getElementById('btnStationsView').className = "px-2.5 py-1 rounded text-[11px] font-bold transition bg-blue-600 text-white shadow";
+                renderSecuredStationVideos();
+            } else if (view === 'project') {
+                document.getElementById('projectView').classList.remove('hidden');
+                document.getElementById('btnProjectView').className = "px-2.5 py-1 rounded text-[11px] font-bold transition bg-blue-600 text-white shadow";
+                renderProjectData();
+            } else if (view === 'debate') {
+                document.getElementById('debateView').classList.remove('hidden');
+                document.getElementById('btnDebateView').className = "px-2.5 py-1 rounded text-[11px] font-bold transition bg-blue-600 text-white shadow";
+                renderDebateForum();
+            } else if (view === 'teacher') {
+                document.getElementById('teacherView').classList.remove('hidden');
+                document.getElementById('btnTeacherView').className = "px-2.5 py-1 rounded text-[11px] font-bold transition bg-blue-600 text-white shadow";
+                renderTeacherDashboard();
+            }
+        }
+
+        // BẢO MẬT VIDEO TRẠM: CHỈ HIỂN THỊ KHI HỌC SINH ĐÃ THAM GIA NHÓM
+        function renderSecuredStationVideos() {
+            const grp = appState.groups[appState.activeGroupCode];
+            const label = document.getElementById('stationActiveGroupLabel');
+            const cls = appState.currentClass;
+            const cData = appState.classes[cls] || {};
+
+            const lock1 = document.getElementById('station1LockedNotice');
+            const cont1 = document.getElementById('station1VideoContainer');
+            const lock2 = document.getElementById('station2LockedNotice');
+            const cont2 = document.getElementById('station2VideoContainer');
+
+            if (grp) {
+                label.innerText = `${grp.name} (${grp.code})`;
+                
+                // Mở khóa Trạm 1
+                lock1.classList.add('hidden');
+                cont1.classList.remove('hidden');
+                const v1Url = cData.station1Video || "https://www.youtube.com/embed/dQw4w9WgXcQ";
+                cont1.innerHTML = `<iframe class="w-full h-full" src="${v1Url}" title="Trạm 1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+
+                // Mở khóa Trạm 2
+                lock2.classList.add('hidden');
+                cont2.classList.remove('hidden');
+                const v2Url = cData.station2Video || "https://www.youtube.com/embed/3JZ_D3ELwOQ";
+                cont2.innerHTML = `<iframe class="w-full h-full" src="${v2Url}" title="Trạm 2" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            } else {
+                label.innerText = "Chưa chọn nhóm (Vào tab Nhóm để tham gia)";
+                lock1.classList.remove('hidden');
+                cont1.classList.add('hidden');
+                lock2.classList.remove('hidden');
+                cont2.classList.add('hidden');
+            }
+        }
+
+        // BỘ ĐẾM NGƯỢC THỜI GIAN THẢO LUẬN TRỰC TUYẾN
+        function startCountdownTimer() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                const cls = appState.currentClass;
+                const cData = appState.classes[cls] || {};
+                const durationMin = parseInt(cData.durationMinutes) || 15;
+                
+                // Tính thời gian dựa trên thời điểm tải bài hoặc lưu
+                let startTime = localStorage.getItem('giangnam_starttime_' + cls);
+                if (!startTime) {
+                    startTime = Date.now();
+                    localStorage.setItem('giangnam_starttime_' + cls, startTime);
+                }
+
+                const elapsedSec = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+                const totalSec = durationMin * 60;
+                let remainSec = totalSec - elapsedSec;
+
+                const display = document.getElementById('countdownTimerDisplay');
+                const deadlineBadge = document.getElementById('deadlineDisplayBadge');
+
+                if (cData.deadline) {
+                    const deadlineDate = new Date(cData.deadline);
+                    const now = new Date();
+                    const diffMs = deadlineDate - now;
+                    if (diffMs > 0) {
+                        const m = Math.floor(diffMs / 60000);
+                        const s = Math.floor((diffMs % 60000) / 1000);
+                        if(display) display.innerText = `${m}p ${s}s`;
+                        if(deadlineBadge) deadlineBadge.innerText = deadlineDate.toLocaleString();
+                    } else {
+                        if(display) display.innerText = "Đã hết giờ thảo luận!";
+                        if(deadlineBadge) deadlineBadge.innerText = "Đã quá hạn";
+                    }
+                } else {
+                    if (remainSec > 0) {
+                        const m = Math.floor(remainSec / 60);
+                        const s = remainSec % 60;
+                        if(display) display.innerText = `${m < 10 ? '0':''}${m}:${s < 10 ? '0':''}${s}`;
+                        if(deadlineBadge) deadlineBadge.innerText = "Trong vòng " + durationMin + " phút";
+                    } else {
+                        if(display) display.innerText = "Hết giờ thảo luận chính thức!";
+                    }
+                }
+            }, 1000);
+        }
+
+        function openAddClassModal() { document.getElementById('addClassModal').classList.remove('hidden'); }
+        function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+
+        function submitAddClass() {
+            const newClassName = document.getElementById('inputNewClassName').value.trim().toUpperCase();
+            if (!newClassName) { alert("Vui lòng nhập tên lớp!"); return; }
+            if (appState.classes[newClassName]) { alert("Lớp đã tồn tại!"); return; }
+            appState.classes[newClassName] = { password: newClassName + "2026", topic: "", requirement: "", durationMinutes: 15, deadline: "", station1Video: "", station2Video: "", attachmentName: "", attachmentData: "", teacherFeedback: {}, grades: {}, stations: {} };
+            appState.currentClass = newClassName;
+            saveAppDataLocally();
+            pushClassDataToCloud(newClassName);
+            closeModal('addClassModal');
+            updateClassSelectDropdown();
+            renderTeacherDashboard();
+            renderUI();
+            alert(`🎉 Đã tạo thành công lớp "${newClassName}"!`);
+        }
+
+        function handleTeacherFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('teacherInputAttachmentName').value = file.name;
+                const cls = appState.currentClass;
+                appState.classes[cls].attachmentName = file.name;
+                appState.classes[cls].attachmentData = e.target.result;
+                saveAppDataLocally();
+                alert(`Đã đính kèm tệp "${file.name}"! Nhớ bấm "Lưu & Giao bài lên đám mây".`);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleStudentFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const group = appState.groups[appState.activeGroupCode];
+                if (!group) { alert("Vui lòng chọn nhóm trước!"); return; }
+                if (!appState.currentStudentName) appState.currentStudentName = prompt("Nhập họ tên của em:") || "Học sinh";
+                const fileType = document.getElementById('contributionFileType').value;
+                const contentMsg = `📁 Đóng góp tệp [<strong>${fileType}</strong>]: <a href="${e.target.result}" download="${file.name}" class="text-blue-600 underline font-semibold">${file.name}</a>`;
+                if (!group.chats) group.chats = [];
+                group.chats.push({ sender: appState.currentStudentName, role: 'Thành viên', message: contentMsg, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+                saveAppDataLocally();
+                pushGroupDataToCloud(group.code);
+                renderUI();
+                alert(`Đã đóng góp tệp "${file.name}" thành công!`);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function pushClassDataToCloud(cls) {
+            if (!db) return;
+            try { await db.collection("artifacts").doc("giangnam146-5a353").collection("public").doc("class_" + cls).set(appState.classes[cls]); } catch (e) { console.error(e); }
+        }
+        async function pushGroupDataToCloud(groupCode) {
+            if (!db || !groupCode) return;
+            try { await db.collection("artifacts").doc("giangnam146-5a353").collection("public").doc("group_" + groupCode).set(appState.groups[groupCode]); } catch (e) { console.error(e); }
+        }
+        async function pushGlobalDataToCloud() {
+            if (!db) return;
+            try {
+                await db.collection("artifacts").doc("giangnam146-5a353").collection("public").doc("global_methods_data").set({
+                    projects: appState.projects || {},
+                    debates: appState.debates || [],
+                    directorChats: appState.directorChats || {}
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function manualSyncToCloud() {
+            saveAppDataLocally();
+            await pushClassDataToCloud(appState.currentClass);
+            if (appState.activeGroupCode) await pushGroupDataToCloud(appState.activeGroupCode);
+            await pushGlobalDataToCloud();
+            alert("💾 Đã lưu & đồng bộ toàn bộ dữ liệu phương pháp lên đám mây thành công!");
+        }
+
+        async function manualFetchFromCloud() {
+            if (!db) return;
+            try {
+                const badge = document.getElementById('syncStatusBadge');
+                if(badge) badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-600"></i> Đang đồng bộ...';
+
+                for (let cls of Object.keys(appState.classes)) {
+                    const cRef = await db.collection("artifacts").doc("giangnam146-5a353").collection("public").doc("class_" + cls).get();
+                    if (cRef.exists) appState.classes[cls] = cRef.data();
+                }
+                const gSnap = await db.collection("artifacts").doc("giangnam146-5a353").collection("public").get();
+                gSnap.forEach(doc => { 
+                    if (doc.id.startsWith("group_")) appState.groups[doc.data().code] = doc.data(); 
+                });
+
+                const gDataRef = await db.collection("artifacts").doc("giangnam146-5a353").collection("public").doc("global_methods_data").get();
+                if (gDataRef.exists) {
+                    const d = gDataRef.data();
+                    appState.projects = d.projects || {};
+                    appState.debates = d.debates || [];
+                    appState.directorChats = d.directorChats || {};
+                }
+
+                saveAppDataLocally();
+                renderUI();
+                renderDirectorChat();
+                renderProjectData();
+                renderDebateForum();
+                if (!document.getElementById('teacherView').classList.contains('hidden')) renderTeacherDashboard();
+                if(badge) badge.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600"></i> Đã đồng bộ đám mây';
+                alert("☁️ Đã tải toàn bộ dữ liệu mới nhất từ đám mây!");
+            } catch (e) { console.error(e); alert("Lỗi kết nối đám mây."); }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => { loadAppData(); await manualFetchFromCloud(); });
+
+        async function updateStationProgress(stationNo) {
+            const groupCode = appState.activeGroupCode;
+            if (!groupCode) {
+                alert("Em chưa chọn nhóm! Hãy vào tab 'Nhóm' để tham gia nhóm trước.");
+                return;
+            }
+            const studentNames = prompt(`Nhập tên các học sinh tham gia Trạm ${stationNo} (Ví dụ: An, Bình, Cường, Dung):`) || appState.currentStudentName;
+            if (!studentNames) return;
+
+            const cls = appState.currentClass;
+            if (!appState.classes[cls].stations) appState.classes[cls].stations = {};
+            if (!appState.classes[cls].stations[groupCode]) appState.classes[cls].stations[groupCode] = {};
+
+            const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            appState.classes[cls].stations[groupCode][`tram_${stationNo}`] = { 
+                completed: true, 
+                time: timeStr, 
+                students: studentNames 
+            };
+            
+            saveAppDataLocally();
+            await pushClassDataToCloud(cls);
+            alert(`🎉 Xác nhận hoàn thành Trạm ${stationNo} với các thành viên [${studentNames}] thành công! Đã gửi về bảng quản lý của giáo viên.`);
+        }
+
+        function renderDirectorChat() {
+            const chatBox = document.getElementById('directorChatMessages');
+            const groupCode = appState.activeGroupCode || "chung";
+            if (!appState.directorChats[groupCode]) {
+                appState.directorChats[groupCode] = [
+                    { sender: "AI Đạo Diễn", text: "Xin chào các nhà biên kịch trẻ! Tôi là AI đạo diễn của nhóm bạn. Hôm nay, chúng ta sẽ cùng sáng tạo một vở diễn sắm vai của riêng mình qua các bước: chọn chủ đề, xây dựng mâu thuẫn, phân vai và hoàn thiện kịch bản biểu diễn.\n\nCâu hỏi đầu tiên: Nhóm bạn muốn kể câu chuyện về chủ đề nào? (Ví dụ: Tình bạn học đường, Áp lực gia đình, Sử dụng AI có trách nhiệm, An toàn mạng xã hội...) Hãy chia sẻ ý tưởng nhé!" }
+                ];
+            }
+            let html = '';
+            appState.directorChats[groupCode].forEach(msg => {
+                if (msg.sender === "Nhóm tôi") {
+                    html += `<div class="bg-blue-600 text-white font-medium p-3 rounded-xl ml-auto max-w-xl shadow-sm"><strong>Nhóm tôi:</strong> ${msg.text}</div>`;
+                } else {
+                    html += `<div class="bg-white text-slate-900 p-3.5 rounded-xl border border-slate-300 shadow-sm space-y-1 max-w-2xl whitespace-pre-line"><strong class="text-blue-600 block"><i class="fa-solid fa-clapperboard mr-1"></i> ${msg.sender}:</strong>${msg.text}</div>`;
+                }
+            });
+            chatBox.innerHTML = html;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendDirectorMessage() {
+            const input = document.getElementById('directorUserInput');
+            const text = input.value.trim();
+            if (!text) return;
+            const groupCode = appState.activeGroupCode || "chung";
+            if (!appState.directorChats[groupCode]) appState.directorChats[groupCode] = [];
+            
+            appState.directorChats[groupCode].push({ sender: "Nhóm tôi", text });
+            input.value = '';
+            renderDirectorChat();
+            saveAppDataLocally();
+            await pushGlobalDataToCloud();
+
+            const loadingId = 'loading_dir_' + Date.now();
+            const chatBox = document.getElementById('directorChatMessages');
+            chatBox.innerHTML += `<div id="${loadingId}" class="bg-white text-slate-900 p-3 rounded-xl border border-slate-300 max-w-xl"><i class="fa-solid fa-spinner fa-spin mr-1.5 text-blue-600"></i> Đạo Diễn AI đang định hướng kịch bản...</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const apiKey = "AIzaSyD3_I7RGkE5-JEaWnagXSvrJcyx-ycAi3s";
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "Bạn là AI đạo diễn kịch bản sắm vai THPT. Nhóm phản hồi: '" + text + "'. Hãy đưa ra nhận xét ngắn và câu hỏi tiếp theo cho các bước trong quy trình." }] }] })
+                });
+                const data = await res.json();
+                document.getElementById(loadingId).remove();
+                let reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Hãy tiếp tục ý tưởng này nhé!";
+                
+                appState.directorChats[groupCode].push({ sender: "AI Đạo Diễn", text: reply });
+                saveAppDataLocally();
+                await pushGlobalDataToCloud();
+                renderDirectorChat();
+            } catch (e) { 
+                document.getElementById(loadingId).remove(); 
+                alert("Lỗi kết nối AI."); 
+            }
+        }
+
+        function clearDirectorChat() {
+            if (confirm("Làm mới kịch bản?")) {
+                const groupCode = appState.activeGroupCode || "chung";
+                appState.directorChats[groupCode] = [
+                    { sender: "AI Đạo Diễn", text: "Xin chào các nhà biên kịch trẻ! Chọn chủ đề tiếp theo nhé?" }
+                ];
+                saveAppDataLocally();
+                pushGlobalDataToCloud();
+                renderDirectorChat();
+            }
+        }
+
+        function renderProjectData() {
+            const groupCode = appState.activeGroupCode || "chung";
+            const pData = appState.projects[groupCode] || { problem: "", solution: "", plan: "" };
+            document.getElementById('projectProblemInput').value = pData.problem;
+            document.getElementById('projectSolutionInput').value = pData.solution;
+            document.getElementById('projectPlanInput').value = pData.plan;
+        }
+
+        async function saveProjectData() {
+            const groupCode = appState.activeGroupCode || "chung";
+            appState.projects[groupCode] = {
+                problem: document.getElementById('projectProblemInput').value.trim(),
+                solution: document.getElementById('projectSolutionInput').value.trim(),
+                plan: document.getElementById('projectPlanInput').value.trim()
+            };
+            saveAppDataLocally();
+            await pushGlobalDataToCloud();
+            alert("🚀 Đã lưu ý tưởng dự án sơ đồ của nhóm lên đám mây thành công!");
+        }
+
+        function renderDebateForum() {
+            const list = document.getElementById('debateForumList');
+            if (!appState.debates || appState.debates.length === 0) {
+                list.innerHTML = `<div class="text-slate-400 italic text-center py-10">Chưa có ý kiến tranh biện nào. Hãy thêm ý kiến phản biện mới!</div>`;
+                return;
+            }
+            let html = '';
+            appState.debates.forEach((d, idx) => {
+                html += `
+                    <div class="bg-white p-3 rounded-lg border border-slate-200 space-y-1 shadow-sm flex items-start justify-between">
+                        <div class="space-y-1">
+                            <div class="font-bold text-blue-900">${d.author} - Giải pháp: ${d.title}</div>
+                            <p class="text-slate-700">${d.content}</p>
+                            <button onclick="voteDebate(${idx})" class="text-emerald-600 hover:text-emerald-700 font-bold text-xs mt-1">👍 ${d.votes} Bình chọn</button>
+                        </div>
+                        <button onclick="deleteDebateComment(${idx})" class="text-rose-500 hover:text-rose-700 text-xs px-2 py-1" title="Xóa ý kiến"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        async function addDebateComment() {
+            const title = prompt("Nhập tiêu đề hoặc tên giải pháp của nhóm:") || "Giải pháp nhóm";
+            const content = prompt("Nhập nội dung quan điểm hoặc ý kiến phản biện:") || "";
+            if (!content) return;
+            const author = appState.currentStudentName || prompt("Nhập tên của em:") || "Học sinh";
+            
+            if (!appState.debates) appState.debates = [];
+            appState.debates.push({ author: `${author} (${appState.currentClass})`, title, content, votes: 1 });
+            saveAppDataLocally();
+            await pushGlobalDataToCloud();
+            renderDebateForum();
+            alert("Đã đăng ý kiến tranh biện lên hệ thống chung của lớp!");
+        }
+
+        async function voteDebate(idx) {
+            appState.debates[idx].votes += 1;
+            saveAppDataLocally();
+            await pushGlobalDataToCloud();
+            renderDebateForum();
+        }
+
+        async function deleteDebateComment(idx) {
+            if (confirm("Thầy/cô hoặc học sinh có chắc chắn muốn xóa ý kiến tranh biện này không?")) {
+                appState.debates.splice(idx, 1);
+                saveAppDataLocally();
+                await pushGlobalDataToCloud();
+                renderDebateForum();
+                alert("Đã xóa ý kiến thành công!");
+            }
+        }
+
+        function changeClass(cls) { 
+            appState.currentClass = cls; 
+            localStorage.removeItem('giangnam_starttime_' + cls);
+            saveAppDataLocally(); 
+            renderUI(); 
+            startCountdownTimer();
+        }
+
+        function renderUI() {
+            const cls = appState.currentClass;
+            const cData = appState.classes[cls] || {};
+            document.getElementById('currentAssignmentTitle').innerText = cData.topic ? `Bài tập: ${cData.topic}` : "Bài tập: Chưa có đề bài";
+            document.getElementById('currentAssignmentDesc').innerText = cData.requirement || "Chưa có yêu cầu.";
+            const group = appState.groups[appState.activeGroupCode];
+            if (group && group.class === cls) {
+                document.getElementById('activeGroupName').innerText = `${group.name} (Mã: ${group.code})`;
+                document.getElementById('currentStudentName').innerText = appState.currentStudentName || "Chưa đăng nhập";
+                renderGroupMembers(group);
+                renderGroupChat(group);
+            }
+        }
+        function renderGroupMembers(group) {
+            const tbody = document.getElementById('groupMembersTableBody');
+            if (!group.members?.length) { tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">Chưa có thành viên.</td></tr>`; return; }
+            let html = '';
+            group.members.forEach((m, idx) => {
+                html += `<tr class="hover:bg-slate-50"><td class="p-2.5 text-slate-900">${m.name}</td><td class="p-2.5 text-blue-600 font-medium">${m.role}</td><td class="p-2.5 text-center">${m.consented ? '✅ Đồng ý' : 'Chưa'}</td><td class="p-2.5 text-right"><button onclick="removeMember('${group.code}',${idx})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            });
+            tbody.innerHTML = html;
+            document.getElementById('groupMemberCountBadge').innerText = group.members.length;
+        }
+        function renderGroupChat(group) {
+            const box = document.getElementById('groupChatBox');
+            if (!group.chats?.length) { box.innerHTML = `<div class="text-slate-400 italic text-center py-8">Chưa có trao đổi.</div>`; return; }
+            let html = '';
+            group.chats.forEach(c => { html += `<div class="bg-white p-2.5 rounded border border-slate-200 shadow-sm"><span class="font-bold text-blue-700">${c.sender}:</span> ${c.message}</div>`; });
+            box.innerHTML = html;
+            box.scrollTop = box.scrollHeight;
+        }
+        function sendGroupContribution() {
+            const input = document.getElementById('chatInputMessage');
+            const msg = input.value.trim();
+            const group = appState.groups[appState.activeGroupCode];
+            if (!group || !msg) { alert("Chọn nhóm và nhập nội dung!"); return; }
+            if (!appState.currentStudentName) appState.currentStudentName = prompt("Nhập tên của em:") || "Học sinh";
+            if (!group.chats) group.chats = [];
+            group.chats.push({ sender: appState.currentStudentName, role: 'Thành viên', message: msg, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+            input.value = '';
+            saveAppDataLocally();
+            pushGroupDataToCloud(group.code);
+            renderUI();
+        }
+        function toggleConsentVote() {
+            const group = appState.groups[appState.activeGroupCode];
+            if (!group) return;
+            if (!appState.currentStudentName) appState.currentStudentName = prompt("Nhập tên:") || "HS";
+            let m = group.members.find(x => x.name.toLowerCase() === appState.currentStudentName.toLowerCase());
+            if (m) m.consented = !m.consented; else group.members.push({ name: appState.currentStudentName, role: 'Thành viên', consented: true });
+            saveAppDataLocally(); pushGroupDataToCloud(group.code); renderUI();
+        }
+        
+        // HỌC SINH NỘP BÀI THƯ KÝ -> KIỂM TRA THỜI GIAN ĐỂ GỢI Ý ĐIỂM SỐ (TỐI ĐA 10 ĐIỂM)
+        function secretarySubmitAssignment() {
+            const group = appState.groups[appState.activeGroupCode];
+            if (!group) { alert("Vui lòng chọn nhóm!"); return; }
+            
+            const cls = appState.currentClass;
+            const cData = appState.classes[cls] || {};
+            let isEarly = true;
+            if (cData.deadline) {
+                if (new Date() > new Date(cData.deadline)) isEarly = false;
+            }
+
+            group.submitted = true;
+            group.submitTime = new Date().toLocaleString();
+            group.isEarly = isEarly;
+            
+            saveAppDataLocally(); 
+            pushGroupDataToCloud(group.code);
+            renderUI();
+            
+            if (isEarly) {
+                alert("🚀 Thư ký đã nộp bài thành công TRƯỚC HẠN! Hệ thống đã ghi nhận để giáo viên chấm điểm tối đa 10đ.");
+            } else {
+                alert("⚠️ Thư ký đã nộp bài MUỘN HƠN THỜI HẠN! Đã gửi về cho giáo viên.");
+            }
+        }
+
+        function openCreateGroupModal() {
+            document.getElementById('modalCreateClassName').innerText = appState.currentClass;
+            document.getElementById('inputGroupCode').value = `${appState.currentClass}-T${Math.floor(Math.random()*90+10)}`;
+            document.getElementById('createGroupModal').classList.remove('hidden');
+        }
+        function submitCreateGroup() {
+            const name = document.getElementById('inputGroupName').value.trim();
+            const code = document.getElementById('inputGroupCode').value.trim();
+            if (!name || !code) { alert("Nhập đủ tên và mã nhóm!"); return; }
+            appState.groups[code] = { name, code, class: appState.currentClass, members: [], chats: [], submitted: false };
+            appState.activeGroupCode = code;
+            saveAppDataLocally(); pushGroupDataToCloud(code);
+            closeModal('createGroupModal'); renderUI();
+            alert("Tạo nhóm thành công!");
+        }
+        function openJoinGroupModal() { document.getElementById('joinGroupModal').classList.remove('hidden'); }
+        function submitJoinGroup() {
+            const name = document.getElementById('joinStudentNameInput').value.trim();
+            const code = document.getElementById('joinGroupCodeInput').value.trim();
+            const group = appState.groups[code];
+            if (!group || !name) { alert("Sai mã nhóm hoặc tên!"); return; }
+            appState.currentStudentName = name; appState.activeGroupCode = code; appState.currentClass = group.class;
+            if (!group.members.some(x => x.name.toLowerCase() === name.toLowerCase())) group.members.push({ name, role: 'Thành viên', consented: false });
+            saveAppDataLocally(); pushGroupDataToCloud(code); closeModal('joinGroupModal'); renderUI();
+            alert("Vào nhóm thành công! Đã mở khóa các tính năng trạm số và video.");
+        }
+        function openChangeGroupModal() {
+            const container = document.getElementById('availableGroupsListContainer');
+            let html = '';
+            Object.values(appState.groups).filter(g => g.class === appState.currentClass).forEach(g => {
+                html += `<div class="bg-slate-50 p-2.5 rounded border border-slate-200 flex justify-between items-center shadow-sm"><span>${g.name} (${g.code})</span><button onclick="selectGroup('${g.code}')" class="bg-blue-600 text-white px-3 py-1 rounded font-bold">Chọn</button></div>`;
+            });
+            container.innerHTML = html || "Chưa có nhóm nào.";
+            document.getElementById('changeGroupModal').classList.remove('hidden');
+        }
+        function selectGroup(code) { appState.activeGroupCode = code; saveAppDataLocally(); closeModal('changeGroupModal'); renderUI(); }
+        function removeMember(code, idx) { appState.groups[code].members.splice(idx, 1); saveAppDataLocally(); pushGroupDataToCloud(code); renderUI(); }
+        function promptTeacherLogin() { document.getElementById('teacherPasswordInput').value = ""; document.getElementById('teacherLoginModal').classList.remove('hidden'); }
+        function verifyTeacherLogin() {
+            if (document.getElementById('teacherPasswordInput').value === "Nam420462@") { closeModal('teacherLoginModal'); switchView('teacher'); }
+            else alert("Sai mật khẩu quản trị!");
+        }
+        function renderTeacherDashboard() {
+            const grid = document.getElementById('teacherClassesGrid');
+            let html = '';
+            Object.keys(appState.classes).forEach(cls => {
+                html += `<div class="portal-card p-4 rounded-xl space-y-2"><h4 class="font-bold text-blue-900">Lớp ${cls}</h4><button onclick="appState.currentClass='${cls}'; renderTeacherDashboard();" class="w-full bg-slate-100 hover:bg-slate-200 text-blue-700 text-xs py-1.5 rounded font-semibold border border-slate-300">Quản lý lớp</button></div>`;
+            });
+            grid.innerHTML = html;
+            loadTeacherPanelData(appState.currentClass);
+        }
+
+        // QUẢN LÝ GV: CÀI ĐẶT THỜI GIAN, LINK VIDEO TRẠM 1 & 2, THEO DÕI TIẾN ĐỘ & CHẤM ĐIỂM THANG 10Đ
+        function loadTeacherPanelData(cls) {
+            document.getElementById('teacherPanelClassBadge').innerText = `Lớp ${cls}`;
+            document.getElementById('teacherSelectedClassName').innerText = `Lớp ${cls}`;
+            const cData = appState.classes[cls] || {};
+            document.getElementById('teacherInputTopic').value = cData.topic || "";
+            document.getElementById('teacherInputRequirement').value = cData.requirement || "";
+            document.getElementById('teacherInputDurationMinutes').value = cData.durationMinutes || 15;
+            document.getElementById('teacherInputDeadline').value = cData.deadline || "";
+            document.getElementById('teacherInputStation1Video').value = cData.station1Video || "";
+            document.getElementById('teacherInputStation2Video').value = cData.station2Video || "";
+            document.getElementById('teacherInputAttachmentName').value = cData.attachmentName || "";
+            
+            const container = document.getElementById('teacherStationsTrackerContainer');
+            const drop = document.getElementById('teacherSelectTargetGroup');
+            let dHtml = '<option value="">-- Chọn tổ nhóm --</option>';
+            let trackerHtml = '';
+
+            const groupsInClass = Object.values(appState.groups).filter(g => g.class === cls);
+            if (groupsInClass.length === 0) {
+                container.innerHTML = `<div class="text-slate-400 italic text-center py-12">Chưa có tổ nhóm nào trong lớp này.</div>`;
+            } else {
+                groupsInClass.forEach(g => {
+                    dHtml += `<option value="${g.code}">${g.name} (${g.code})</option>`;
+                    const stations = cData.stations?.[g.code] || {};
+                    const formatTram = (t) => t ? `✅ <span class="text-slate-900 font-semibold">[${t.students}]</span> <span class="text-slate-400">(${t.time})</span>` : `⏳ Chưa`;
+                    const subInfo = g.submitted ? `<span class="text-emerald-600 font-bold">🚀 Đã nộp (${g.submitTime})</span>` : `<span class="text-amber-600">Chưa nộp</span>`;
+
+                    trackerHtml += `
+                        <div class="bg-white p-3 rounded-lg border border-slate-200 space-y-2 shadow-sm">
+                            <div class="flex justify-between items-center font-bold text-blue-950">
+                                <span>${g.name} (Mã: ${g.code}) - ${subInfo}</span>
+                                <button onclick="deleteGroup('${g.code}')" class="text-rose-500 hover:text-rose-700 text-xs"><i class="fa-solid fa-trash"></i> Xóa</button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-slate-700 bg-slate-50 p-2.5 rounded border border-slate-100 space-y-1">
+                                <div>Trạm 1: ${formatTram(stations.tram_1)}</div>
+                                <div>Trạm 2: ${formatTram(stations.tram_2)}</div>
+                                <div>Trạm 3: ${formatTram(stations.tram_3)}</div>
+                                <div>Trạm 4: ${formatTram(stations.tram_4)}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = trackerHtml;
+            }
+            drop.innerHTML = dHtml;
+        }
+
+        function saveTeacherAssignment() {
+            const cls = appState.currentClass;
+            appState.classes[cls].topic = document.getElementById('teacherInputTopic').value.trim();
+            appState.classes[cls].requirement = document.getElementById('teacherInputRequirement').value.trim();
+            appState.classes[cls].durationMinutes = document.getElementById('teacherInputDurationMinutes').value;
+            appState.classes[cls].deadline = document.getElementById('teacherInputDeadline').value;
+            appState.classes[cls].station1Video = document.getElementById('teacherInputStation1Video').value.trim();
+            appState.classes[cls].station2Video = document.getElementById('teacherInputStation2Video').value.trim();
+            
+            localStorage.setItem('giangnam_starttime_' + cls, Date.now());
+            saveAppDataLocally(); 
+            pushClassDataToCloud(cls); 
+            alert("Đã lưu bài giảng, cài đặt thời gian và video trạm lên đám mây thành công!");
+            startCountdownTimer();
+        }
+
+        function saveTeacherGrades() {
+            const cls = appState.currentClass;
+            const code = document.getElementById('teacherSelectTargetGroup').value;
+            const gG = document.getElementById('teacherInputGradeGroup').value;
+            const pG = document.getElementById('teacherInputGradePersonal').value;
+            const fb = document.getElementById('teacherInputFeedback').value;
+            if (!code) { alert("Chọn nhóm!"); return; }
+            if (parseFloat(gG) > 10 || parseFloat(pG) > 10) { alert("Điểm tối đa là 10 điểm!"); return; }
+
+            if (!appState.classes[cls].grades) appState.classes[cls].grades = {};
+            appState.classes[cls].grades[code] = { groupGrade: gG, personalGrade: pG };
+            appState.classes[cls].teacherFeedback[code] = fb;
+            saveAppDataLocally(); 
+            pushClassDataToCloud(cls); 
+            alert("Đã xuất bản điểm số thang 10 lên đám mây cho học sinh!");
+        }
+
+        async function deleteGroup(code) {
+            if (confirm("Xóa nhóm này?")) {
+                delete appState.groups[code]; saveAppDataLocally();
+                if (db) await db.collection("artifacts").doc("giangnam146-5a353").collection("public").doc("group_" + code).delete();
+                renderTeacherDashboard();
+            }
+        }
+    </script>
+</body>
+</html>
